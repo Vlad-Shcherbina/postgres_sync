@@ -3,6 +3,10 @@ name = "verify_orig"
 version = "0.0.0"
 edition = "2024"
 
+[[bin]]
+name = "verify_orig"
+test = false
+
 # anchor: wNRjWYxF
 [dependencies]
 postgres = "*"

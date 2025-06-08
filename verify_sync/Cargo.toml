@@ -3,6 +3,10 @@ name = "verify_sync"
 version = "0.0.0"
 edition = "2024"
 
+[[bin]]
+name = "verify_sync"
+test = false
+
 # anchor: wNRjWYxF
 [dependencies]
 postgres = { package = "postgres_sync", path = "../postgres_sync" }
