@@ -1,0 +1,3 @@
+[workspace]
+resolver = "3"
+members = ["postgres_sync", "verify_orig", "verify_sync"]

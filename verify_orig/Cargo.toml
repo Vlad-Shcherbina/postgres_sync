@@ -1,0 +1,8 @@
+[package]
+name = "verify_orig"
+version = "0.0.0"
+edition = "2024"
+
+# anchor: wNRjWYxF
+[dependencies]
+postgres = "*"
