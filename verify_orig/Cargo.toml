@@ -9,4 +9,5 @@ test = false
 
 # anchor: wNRjWYxF
 [dependencies]
-postgres = "*"
+postgres = { version = "*", features = ["with-serde_json-1"] }
+serde_json = "1.0"

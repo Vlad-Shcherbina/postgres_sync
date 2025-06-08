@@ -5,9 +5,10 @@
 It doesn't depend on `tokio` and uses `std::net` for networking instead.
 
 Currently implemented:
-* `Client::connect()` with connection strings of the form `"postgres://user:password@host:port/db"`
+* `Client::connect()` with connection strings of the form `"postgresql://user:password@host:port/db"`
 * `Client::query_raw()`
 * `Client::query_one()`
 * `Client::batch_execute()`
 * `Client::execute()`
 * `Client::transaction()`
+* `with-serde_json-1` feature flag

@@ -15,6 +15,7 @@ use postgres_types::{IsNull, Type};
 
 pub use fallible_iterator;
 pub use postgres_types::{BorrowToSql, FromSql, ToSql};
+pub use postgres_types as types;
 
 pub use crate::transaction::Transaction;
 
@@ -423,19 +424,11 @@ impl Row {
     pub fn get<T>(&self, idx: usize) -> T
     where
         for<'a> T: FromSql<'a>,
-        T: std::str::FromStr,
-        <T as std::str::FromStr>::Err: std::fmt::Debug,
     {
         let (_, oid) = &self.columns[idx];
         let ty = Type::from_oid(*oid).unwrap_or(Type::TEXT);
         let raw = self.values[idx].as_deref();
-        match FromSql::from_sql_nullable(&ty, raw) {
-            Ok(v) => v,
-            Err(_) => {
-                let s = std::str::from_utf8(raw.expect("NULL value")).unwrap();
-                s.parse().unwrap()
-            }
-        }
+        FromSql::from_sql_nullable(&ty, raw).unwrap()
     }
 }
 

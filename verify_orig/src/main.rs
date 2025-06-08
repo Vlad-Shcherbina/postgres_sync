@@ -1,5 +1,7 @@
 use postgres::fallible_iterator::FallibleIterator as _;
 
+mod json;
+
 fn main() {
     let s = std::env::args().nth(1).unwrap();
     let mut client = postgres::Client::connect(&s, postgres::NoTls).unwrap();
@@ -112,4 +114,6 @@ fn main() {
         .get(0);
     assert_eq!(count, 4);
     eprintln!("ok");
+
+    json::run(&mut client);
 }
