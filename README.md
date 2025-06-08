@@ -10,3 +10,4 @@ Currently implemented:
 * `Client::query_one()`
 * `Client::batch_execute()`
 * `Client::execute()`
+* `Client::transaction()`

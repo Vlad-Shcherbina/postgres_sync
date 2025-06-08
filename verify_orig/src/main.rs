@@ -81,4 +81,35 @@ fn main() {
         .get(0);
     assert_eq!(count, 3);
     eprintln!("ok");
+
+    eprint!("transaction commit ... ");
+    {
+        let mut tx = client.transaction().unwrap();
+        tx.execute("INSERT INTO test VALUES ($1, $2)", &[&4i32, &"four"]).unwrap();
+        tx.commit().unwrap();
+    }
+    let count: i64 = client
+        .query_one("SELECT COUNT(*) FROM test WHERE id = 4", &[])
+        .unwrap()
+        .get(0);
+    assert_eq!(count, 1);
+    eprintln!("ok");
+
+    eprint!("transaction rollback ... ");
+    {
+        let mut tx = client.transaction().unwrap();
+        tx.execute("INSERT INTO test VALUES ($1, $2)", &[&5i32, &"five"]).unwrap();
+        // implicitly dropped without commit
+    }
+    let count: i64 = client
+        .query_one("SELECT COUNT(*) FROM test WHERE id = 5", &[])
+        .unwrap()
+        .get(0);
+    assert_eq!(count, 0);
+    let count: i64 = client
+        .query_one("SELECT COUNT(*) FROM test", &[])
+        .unwrap()
+        .get(0);
+    assert_eq!(count, 4);
+    eprintln!("ok");
 }
