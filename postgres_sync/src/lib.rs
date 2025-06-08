@@ -20,6 +20,21 @@ mod conn_str;
 
 pub type Error = Box<dyn StdError + Send + Sync>;
 
+#[derive(Debug)]
+pub struct DbError {
+    severity: String,
+    code: String,
+    message: String,
+}
+
+impl std::fmt::Display for DbError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}: {} ({})", self.severity, self.message, self.code)
+    }
+}
+
+impl StdError for DbError {}
+
 #[derive(Debug, Clone, Copy)]
 pub struct NoTls;
 
@@ -153,16 +168,32 @@ impl Client {
         }
     }
 
-    fn error_response(&self, body: backend::ErrorResponseBody) -> String {
-        let mut msg = String::new();
+    fn error_response(&self, body: backend::ErrorResponseBody) -> DbError {
+        let mut severity = String::new();
+        let mut code = String::new();
+        let mut message = String::new();
         let mut fields = body.fields();
         while let Some(field) = fields.next().unwrap() {
-            if field.type_() == b'M' {
-                msg = String::from_utf8_lossy(field.value_bytes()).into_owned();
-                break;
+            match field.type_() {
+                b'S' => severity = String::from_utf8_lossy(field.value_bytes()).into_owned(),
+                b'C' => code = String::from_utf8_lossy(field.value_bytes()).into_owned(),
+                b'M' => message = String::from_utf8_lossy(field.value_bytes()).into_owned(),
+                _ => {}
             }
         }
-        msg
+        DbError { severity, code, message }
+    }
+
+    fn drain_ready(&mut self) -> Result<(), Error> {
+        loop {
+            match self.read_message()? {
+                backend::Message::ReadyForQuery(_) => return Ok(()),
+                backend::Message::ErrorResponse(body) => {
+                    return Err(self.error_response(body).into())
+                }
+                _ => {}
+            }
+        }
     }
 
     #[allow(clippy::type_complexity)]
@@ -197,7 +228,11 @@ impl Client {
                 }
                 backend::Message::NoData => {}
                 backend::Message::ReadyForQuery(_) => break,
-                backend::Message::ErrorResponse(body) => return Err(self.error_response(body).into()),
+                backend::Message::ErrorResponse(body) => {
+                    let err = self.error_response(body);
+                    self.drain_ready()?;
+                    return Err(err.into());
+                }
                 _ => return Err("unexpected message".into()),
             }
         }
@@ -263,7 +298,11 @@ impl Client {
                 }
                 backend::Message::EmptyQueryResponse => rows_affected = 0,
                 backend::Message::ReadyForQuery(_) => return Ok(rows_affected),
-                backend::Message::ErrorResponse(body) => return Err(self.error_response(body).into()),
+                backend::Message::ErrorResponse(body) => {
+                    let err = self.error_response(body);
+                    self.drain_ready()?;
+                    return Err(err.into());
+                }
                 _ => return Err("unexpected message".into()),
             }
         }
@@ -312,7 +351,11 @@ impl Client {
                 | backend::Message::EmptyQueryResponse
                 | backend::Message::RowDescription(_)
                 | backend::Message::DataRow(_) => {}
-                backend::Message::ErrorResponse(body) => return Err(self.error_response(body).into()),
+                backend::Message::ErrorResponse(body) => {
+                    let err = self.error_response(body);
+                    self.drain_ready()?;
+                    return Err(err.into());
+                }
                 _ => return Err("unexpected message".into()),
             }
         }

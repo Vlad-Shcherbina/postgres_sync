@@ -20,6 +20,12 @@ fn main() {
     assert_eq!(result, 4);
     eprintln!("ok");
 
+    eprint!("syntax error ... ");
+    let e = client.query_one("foobar", &[]).err().unwrap();
+    let e = format!("{e:?}");
+    assert!(e.contains("syntax error at or near \\\"foobar\\\""), "{e}");
+    eprintln!("ok");
+
     eprint!("batch_execute ... ");
     client.batch_execute("
         CREATE TEMP TABLE test (id INT PRIMARY KEY, value TEXT);
