@@ -25,15 +25,34 @@ pub struct DbError {
     severity: String,
     code: String,
     message: String,
+    detail: Option<String>,
+    hint: Option<String>,
+    position: Option<ErrorPosition>,
 }
 
 impl std::fmt::Display for DbError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}: {} ({})", self.severity, self.message, self.code)
+        write!(f, "{}: {} ({})", self.severity, self.message, self.code)?;
+        if let Some(detail) = &self.detail {
+            write!(f, "\nDETAIL: {detail}")?;
+        }
+        if let Some(hint) = &self.hint {
+            write!(f, "\nHINT: {hint}")?;
+        }
+        if let Some(pos) = &self.position {
+            write!(f, "\nPOSITION: {pos:?}")?;
+        }
+        Ok(())
     }
 }
 
 impl StdError for DbError {}
+
+#[derive(Debug)]
+pub enum ErrorPosition {
+    Original(u32),
+    Internal { position: u32, query: String },
+}
 
 #[derive(Debug, Clone, Copy)]
 pub struct NoTls;
@@ -172,16 +191,33 @@ impl Client {
         let mut severity = String::new();
         let mut code = String::new();
         let mut message = String::new();
+        let mut detail = None;
+        let mut hint = None;
+        let mut normal_position = None;
+        let mut internal_position = None;
+        let mut internal_query = None;
         let mut fields = body.fields();
         while let Some(field) = fields.next().unwrap() {
             match field.type_() {
                 b'S' => severity = String::from_utf8_lossy(field.value_bytes()).into_owned(),
                 b'C' => code = String::from_utf8_lossy(field.value_bytes()).into_owned(),
                 b'M' => message = String::from_utf8_lossy(field.value_bytes()).into_owned(),
+                b'D' => detail = Some(String::from_utf8_lossy(field.value_bytes()).into_owned()),
+                b'H' => hint = Some(String::from_utf8_lossy(field.value_bytes()).into_owned()),
+                b'P' => normal_position = String::from_utf8_lossy(field.value_bytes()).parse().ok(),
+                b'p' => internal_position = String::from_utf8_lossy(field.value_bytes()).parse().ok(),
+                b'q' => internal_query = Some(String::from_utf8_lossy(field.value_bytes()).into_owned()),
                 _ => {}
             }
         }
-        DbError { severity, code, message }
+        let position = match normal_position {
+            Some(pos) => Some(ErrorPosition::Original(pos)),
+            None => internal_position.map(|pos| ErrorPosition::Internal {
+                position: pos,
+                query: internal_query.unwrap_or_default(),
+            }),
+        };
+        DbError { severity, code, message, detail, hint, position }
     }
 
     fn drain_ready(&mut self) -> Result<(), Error> {

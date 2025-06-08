@@ -24,6 +24,17 @@ fn main() {
     let e = client.query_one("foobar", &[]).err().unwrap();
     let e = format!("{e:?}");
     assert!(e.contains("syntax error at or near \\\"foobar\\\""), "{e}");
+    assert!(e.contains("position: Some(Original(1))"), "{e}");
+    eprintln!("ok");
+
+    eprint!("error with hint ... ");
+    let e = client
+        .query_one("SELECT $1 + $2", &[&2i32, &2i32])
+        .err().unwrap();
+    let e = format!("{e:?}");
+    assert!(e.contains("operator is not unique: unknown + unknown"), "{e}");  // error message
+    assert!(e.contains("Could not choose a best candidate operator. You might need to add explicit type casts."), "{e}");  // hint
+    assert!(e.contains("position: Some(Original(11))"), "{e}");
     eprintln!("ok");
 
     eprint!("batch_execute ... ");
