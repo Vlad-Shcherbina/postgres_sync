@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+jobs:
+    everything:
+      runs-on: ubuntu-latest
+
+      services:
+        postgres:
+          image: postgres:17-alpine
+          env:
+            POSTGRES_PASSWORD: postgres
+          options: >-
+            --health-cmd pg_isready
+            --health-interval 10s
+            --health-timeout 5s
+            --health-retries 5
+          ports:
+            - 5432:5432
+
+      steps:
+        - uses: actions/checkout@v4
+
+        - run: |
+            rustup install nightly --profile minimal
+            rustup default nightly
+            rustup component add clippy
+            cargo --version
+            cargo clippy --version
+
+        - uses: Swatinem/rust-cache@v2
+
+        - run: cargo fetch --locked
+
+        - run: cargo test
+
+        - run: cargo run -p verify_orig postgresql://postgres:postgres@localhost:5432/postgres
+        - run: cargo run -p verify_sync postgresql://postgres:postgres@localhost:5432/postgres
+
+        - run: cargo clippy --tests -- --D warnings
