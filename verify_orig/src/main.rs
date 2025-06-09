@@ -92,6 +92,16 @@ fn main() {
     assert_eq!(bytes, b"bar");
     eprintln!("ok");
 
+    eprint!("row.get by name ... ");
+    let row = client
+        .query_one("SELECT 1 AS one, 2 AS two", &[])
+        .unwrap();
+    let one: i32 = row.get("one");
+    let two: i32 = row.get("two");
+    assert_eq!(one, 1);
+    assert_eq!(two, 2);
+    eprintln!("ok");
+
     eprint!("execute ... ");
     let rows = client
         .execute("INSERT INTO test VALUES ($1, $2)", &[&3i32, &"three"])

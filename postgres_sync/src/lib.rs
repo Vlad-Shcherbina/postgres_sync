@@ -428,11 +428,32 @@ pub struct Row {
     values: Vec<Option<Vec<u8>>>,
 }
 
+pub trait RowIndex {
+    fn idx(&self, columns: &[(String, Oid)]) -> Option<usize>;
+}
+
+impl RowIndex for usize {
+    fn idx(&self, columns: &[(String, Oid)]) -> Option<usize> {
+        if *self < columns.len() { Some(*self) } else { None }
+    }
+}
+
+impl RowIndex for &str {
+    fn idx(&self, columns: &[(String, Oid)]) -> Option<usize> {
+        columns.iter()
+            .position(|(name, _)| name == self)
+        .or_else(|| columns.iter()
+            .position(|(name, _)| name.eq_ignore_ascii_case(self)))
+    }
+}
+
+
 impl Row {
-    pub fn get<'a, T>(&'a self, idx: usize) -> T
+    pub fn get<'a, T>(&'a self, idx: impl RowIndex) -> T
     where
         T: FromSql<'a>,
     {
+        let idx = idx.idx(&self.columns).expect("invalid column");
         let (_, oid) = &self.columns[idx];
         let ty = Type::from_oid(*oid).unwrap_or(Type::TEXT);
         let raw = self.values[idx].as_deref();
