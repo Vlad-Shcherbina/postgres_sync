@@ -1,3 +1,13 @@
+//! A synchronous, drop-in replacement for the `postgres` crate.
+//!
+//! This crate provides a compatible API but uses standard library networking instead of `tokio`.
+//!
+//! For detailed documentation on individual functions and types, please refer to the
+//! [original `postgres` crate documentation](https://docs.rs/postgres/latest/postgres/).
+//!
+//! **Note:** `postgres_sync` implements a *subset* of the `postgres` API. If you find a
+//! feature in the `postgres` docs, it may not yet be implemented in this crate.
+
 use std::error::Error as StdError;
 use std::io::{Read, Write};
 use std::net::TcpStream;

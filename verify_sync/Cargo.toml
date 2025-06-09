@@ -2,6 +2,7 @@
 name = "verify_sync"
 version = "0.0.0"
 edition = "2024"
+publish = false
 
 [[bin]]
 name = "verify_sync"

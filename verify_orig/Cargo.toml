@@ -2,6 +2,7 @@
 name = "verify_orig"
 version = "0.0.0"
 edition = "2024"
+publish = false
 
 [[bin]]
 name = "verify_orig"
