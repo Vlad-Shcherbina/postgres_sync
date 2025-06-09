@@ -1,5 +1,11 @@
 # postgres_sync
 
+[![crates.io](https://img.shields.io/crates/v/postgres_sync.svg)](https://crates.io/crates/postgres_sync)
+[![docs.rs](https://img.shields.io/docsrs/postgres_sync/latest)](https://docs.rs/postgres_sync)
+[![CI status](https://github.com/Vlad-Shcherbina/postgres_sync/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Vlad-Shcherbina/postgres_sync/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+
 A purely synchronous PostgreSQL client library that provides the same interface as the `postgres` crate,
 but uses standard library networking instead of `tokio`.
 This results in a smaller dependency graph and more predictable blocking behavior.
