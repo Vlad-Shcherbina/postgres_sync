@@ -50,6 +50,7 @@ The goal is for any implemented feature to behave identically to the original.
 - `{Client, Transaction}::batch_execute()`
 - `{Client, Transaction}::execute()`
 - `with-serde_json-1` feature flag
+- `with-chrono-0_4` feature flag
 
 ### Limitations and divergences
 

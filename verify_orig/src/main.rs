@@ -1,6 +1,7 @@
 use postgres::fallible_iterator::FallibleIterator as _;
 
 mod json;
+mod chrono;
 
 fn main() {
     let s = std::env::args().nth(1).unwrap();
@@ -116,4 +117,5 @@ fn main() {
     eprintln!("ok");
 
     json::run(&mut client);
+    chrono::run(&mut client);
 }
