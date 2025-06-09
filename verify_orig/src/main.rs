@@ -82,6 +82,16 @@ fn main() {
     drop(it);
     eprintln!("ok");
 
+    eprint!("borrow row.get ... ");
+    let row = client
+        .query_one("SELECT 'foo'::TEXT, 'bar'::BYTEA", &[])
+        .unwrap();
+    let text: &str = row.get(0);
+    assert_eq!(text, "foo");
+    let bytes: &[u8] = row.get(1);
+    assert_eq!(bytes, b"bar");
+    eprintln!("ok");
+
     eprint!("execute ... ");
     let rows = client
         .execute("INSERT INTO test VALUES ($1, $2)", &[&3i32, &"three"])

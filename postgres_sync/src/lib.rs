@@ -429,9 +429,9 @@ pub struct Row {
 }
 
 impl Row {
-    pub fn get<T>(&self, idx: usize) -> T
+    pub fn get<'a, T>(&'a self, idx: usize) -> T
     where
-        for<'a> T: FromSql<'a>,
+        T: FromSql<'a>,
     {
         let (_, oid) = &self.columns[idx];
         let ty = Type::from_oid(*oid).unwrap_or(Type::TEXT);
