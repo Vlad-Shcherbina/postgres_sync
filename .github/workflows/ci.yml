@@ -3,6 +3,8 @@ name: CI
 on:
   push:
   pull_request:
+  schedule:
+    - cron: '42 6 * * *'
 
 env:
   CARGO_TERM_COLOR: always
@@ -45,3 +47,17 @@ jobs:
         - run: cargo run -p verify_sync postgresql://postgres:postgres@localhost:5432/postgres
 
         - run: cargo clippy --tests -- --D warnings
+
+        - if: github.event_name == 'schedule'
+          run: cargo update
+
+        - if: github.event_name == 'schedule'
+          run: cargo test
+
+        - if: github.event_name == 'schedule'
+          run: cargo run -p verify_orig postgresql://postgres:postgres@localhost:5432/postgres
+        - if: github.event_name == 'schedule'
+          run: cargo run -p verify_sync postgresql://postgres:postgres@localhost:5432/postgres
+
+        - if: github.event_name == 'schedule'
+          run: cargo clippy --tests -- --D warnings
