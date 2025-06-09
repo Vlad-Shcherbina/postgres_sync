@@ -40,6 +40,10 @@ impl<'a> Transaction<'a> {
         self.client.execute(query, params)
     }
 
+    pub fn query(&mut self, query: &str, params: &[&(dyn ToSql + Sync)]) -> Result<Vec<Row>, Error> {
+        self.client.query(query, params)
+    }
+
     pub fn query_one(&mut self, query: &str, params: &[&(dyn ToSql + Sync)]) -> Result<Row, Error> {
         self.client.query_one(query, params)
     }

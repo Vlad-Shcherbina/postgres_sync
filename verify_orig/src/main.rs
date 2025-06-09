@@ -52,6 +52,15 @@ fn main() {
     assert_eq!(count, 2);
     eprintln!("ok");
 
+    eprint!("query ... ");
+    let rows = client.query("SELECT value FROM test ORDER BY id", &[]).unwrap();
+    assert_eq!(rows.len(), 2);
+    let val: String = rows[0].get(0);
+    assert_eq!(val, "one");
+    let val: String = rows[1].get(0);
+    assert_eq!(val, "two");
+    eprintln!("ok");
+
     eprint!("query_raw ... ");
     let mut it = client
         .query_raw(

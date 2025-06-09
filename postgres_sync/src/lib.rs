@@ -371,6 +371,14 @@ impl Client {
         self.bind_execute(params.iter().copied(), &param_types, None)
     }
 
+    pub fn query(
+        &mut self,
+        query: &str,
+        params: &[&(dyn ToSql + Sync)],
+    ) -> Result<Vec<Row>, Error> {
+        self.query_raw(query, params.iter().copied())?.collect()
+    }
+
     pub fn query_one(&mut self, query: &str, params: &[&(dyn ToSql + Sync)]) -> Result<Row, Error> {
         let mut it = self.query_raw(query, params.iter().copied())?;
         let first = it.next()?.ok_or("no rows returned")?;

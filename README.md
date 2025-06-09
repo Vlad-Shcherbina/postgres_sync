@@ -47,6 +47,7 @@ The goal is for any implemented feature to behave identically to the original.
 - `Client::transaction()`
 - `{Client, Transaction}::query_raw()`
 - `{Client, Transaction}::query_one()`
+- `{Client, Transaction}::query()`
 - `{Client, Transaction}::batch_execute()`
 - `{Client, Transaction}::execute()`
 - `with-serde_json-1` feature flag
