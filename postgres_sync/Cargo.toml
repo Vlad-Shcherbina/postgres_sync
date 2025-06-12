@@ -1,6 +1,6 @@
 [package]
 name = "postgres_sync"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 authors = ["Vlad Shcherbina <vlad.shcherbina@gmail.com>"]
 description = "A synchronous PostgreSQL client using std::net, with an API compatible with the popular postgres crate."
