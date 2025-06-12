@@ -29,7 +29,7 @@ pub use postgres_types as types;
 
 pub use crate::transaction::Transaction;
 
-mod conn_str;
+mod config;
 mod transaction;
 
 pub type Error = Box<dyn StdError + Send + Sync>;
@@ -79,10 +79,10 @@ pub struct Client {
 
 impl Client {
     pub fn connect(s: &str, _tls: NoTls) -> Result<Client, Error> {
-        let parts = conn_str::ConnParts::parse(s).map_err(|()| "invalid connection string")?;
-        let stream = TcpStream::connect((parts.host, parts.port))?;
-        let user = parts.user;
-        let db = parts.db;
+        let config = config::Config::parse(s).map_err(|()| "invalid connection string")?;
+        let stream = TcpStream::connect((config.host.as_str(), config.port))?;
+        let user = &config.user;
+        let db = &config.db;
 
         let mut this = Client {
             stream,
@@ -90,7 +90,7 @@ impl Client {
             write_buf: BytesMut::with_capacity(8192),
         };
 
-        let mut params = Vec::new();
+        let mut params: Vec<(&str, &str)> = Vec::new();
         params.push(("user", user));
         if !db.is_empty() {
             params.push(("database", db));
@@ -100,7 +100,7 @@ impl Client {
         frontend::startup_message(params.iter().copied(), &mut this.write_buf)?;
         this.flush()?;
 
-        this.handle_auth(user.as_bytes(), parts.password)?;
+        this.handle_auth(user.as_bytes(), &config.password)?;
 
         loop {
             match this.read_message()? {
