@@ -1,4 +1,4 @@
-pub(crate) struct Config {
+pub struct Config {
     pub(crate) user: String,
     pub(crate) password: String,
     pub(crate) host: String,
@@ -7,7 +7,7 @@ pub(crate) struct Config {
 }
 
 impl Config {
-    pub(crate) fn parse(s: &str) -> Result<Self, ()> {
+    fn parse_inner(s: &str) -> Result<Self, ()> {
         let s = s.strip_prefix("postgresql://").ok_or(())?;
         let (creds, rest) = s.split_once('@').ok_or(())?;
         let (user, password) = creds.split_once(':').ok_or(())?;
@@ -21,6 +21,22 @@ impl Config {
             port,
             db: db.to_string(),
         })
+    }
+
+    pub fn parse(s: &str) -> Result<Self, String> {
+        Self::parse_inner(s).map_err(|()| "invalid connection string".into())
+    }
+
+    pub fn connect(&self, _tls: crate::NoTls) -> Result<crate::Client, crate::Error> {
+        crate::Client::connect_config(self, _tls)
+    }
+}
+
+impl std::str::FromStr for Config {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Self::parse(s)
     }
 }
 

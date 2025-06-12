@@ -28,6 +28,7 @@ pub use postgres_types::{BorrowToSql, FromSql, ToSql};
 pub use postgres_types as types;
 
 pub use crate::transaction::Transaction;
+pub use crate::config::Config;
 
 mod config;
 mod transaction;
@@ -79,7 +80,11 @@ pub struct Client {
 
 impl Client {
     pub fn connect(s: &str, _tls: NoTls) -> Result<Client, Error> {
-        let config = config::Config::parse(s).map_err(|()| "invalid connection string")?;
+        let config = config::Config::parse(s)?;
+        Self::connect_config(&config, _tls)
+    }
+
+    fn connect_config(config: &config::Config, _tls: NoTls) -> Result<Client, Error> {
         let stream = TcpStream::connect((config.host.as_str(), config.port))?;
         let user = &config.user;
         let db = &config.db;

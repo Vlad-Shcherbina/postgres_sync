@@ -5,6 +5,15 @@ mod chrono;
 
 fn main() {
     let s = std::env::args().nth(1).unwrap();
+    eprint!("Config::connect ... ");
+    let mut config = s.parse::<postgres::Config>().unwrap()
+        .connect(postgres::NoTls)
+        .unwrap();
+    let row = config.query_one("SELECT 1 + 1", &[]).unwrap();
+    let v: i32 = row.get(0);
+    assert_eq!(v, 2);
+    eprintln!("ok");
+
     let mut client = postgres::Client::connect(&s, postgres::NoTls).unwrap();
 
     eprint!("SELECT 2 + 2 ... ");

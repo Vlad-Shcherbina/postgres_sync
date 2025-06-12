@@ -49,7 +49,8 @@ The goal is for any implemented feature to behave identically to the original.
 
 ### Implemented
 
-- `Client::connect()` with connection strings of the form `"postgresql://user:password@host:port/db"` and `NoTls`
+- `Config::parse()` with connection strings of the form `"postgresql://user:password@host:port/db"`
+- `Client::connect()`, `Config::connect()` with `NoTls`
 - `Client::transaction()`
 - `{Client, Transaction}::query_raw()`
 - `{Client, Transaction}::query_one()`
