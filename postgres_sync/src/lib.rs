@@ -11,6 +11,7 @@
 use std::error::Error as StdError;
 use std::io::{Read, Write};
 use std::net::TcpStream;
+use std::time::Duration;
 
 use bytes::BytesMut;
 use fallible_iterator::FallibleIterator;
@@ -22,6 +23,7 @@ use postgres_protocol::authentication::{
 use postgres_protocol::message::backend;
 use postgres_protocol::message::frontend;
 use postgres_types::{IsNull, Type};
+use socket2::{SockRef, TcpKeepalive};
 
 pub use fallible_iterator;
 pub use postgres_types::{BorrowToSql, FromSql, ToSql};
@@ -86,6 +88,11 @@ impl Client {
 
     fn connect_config(config: &config::Config, _tls: NoTls) -> Result<Client, Error> {
         let stream = TcpStream::connect((config.host.as_str(), config.port))?;
+
+        let sock_ref = SockRef::from(&stream);
+        let keepalive = TcpKeepalive::new().with_time(Duration::from_secs(50));
+        sock_ref.set_tcp_keepalive(&keepalive)?;
+
         let user = &config.user;
         let db = &config.db;
 

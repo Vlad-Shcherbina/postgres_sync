@@ -500,6 +500,7 @@ dependencies = [
  "fallible-iterator",
  "postgres-protocol",
  "postgres-types",
+ "socket2",
 ]
 
 [[package]]
