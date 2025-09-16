@@ -2,8 +2,10 @@ use postgres::fallible_iterator::FallibleIterator as _;
 
 mod json;
 mod chrono;
+mod logger;
 
 fn main() {
+    logger::init_logger();
     let s = std::env::args().nth(1).unwrap();
     eprint!("Config::connect ... ");
     let mut config = s.parse::<postgres::Config>().unwrap()

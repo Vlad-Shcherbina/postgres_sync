@@ -520,6 +520,7 @@ version = "0.1.1"
 dependencies = [
  "bytes",
  "fallible-iterator",
+ "log",
  "postgres-protocol",
  "postgres-types",
  "socket2 0.5.10",
@@ -854,6 +855,7 @@ name = "verify_orig"
 version = "0.0.0"
 dependencies = [
  "chrono",
+ "log",
  "postgres",
  "serde_json",
 ]
@@ -863,6 +865,7 @@ name = "verify_sync"
 version = "0.0.0"
 dependencies = [
  "chrono",
+ "log",
  "postgres_sync",
  "serde_json",
 ]

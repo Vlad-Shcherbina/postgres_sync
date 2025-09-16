@@ -203,8 +203,7 @@ impl Client {
         loop {
             if let Some(message) = backend::Message::parse(&mut self.read_buf)? {
                 if let backend::Message::NoticeResponse(body) = &message {
-                    // TODO: use log
-                    eprintln!("postgres notice: {:?}", self.error_response(body.fields()));
+                    log::info!("postgres notice: {:?}", self.error_response(body.fields()));
                     continue;
                 }
                 return Ok(message);

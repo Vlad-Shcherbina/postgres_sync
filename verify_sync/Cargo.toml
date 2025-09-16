@@ -13,3 +13,4 @@ test = false
 postgres = { package = "postgres_sync", path = "../postgres_sync", features = ["with-serde_json-1", "with-chrono-0_4"] }
 serde_json = "1.0"
 chrono = "0.4"
+log = "0.4"
