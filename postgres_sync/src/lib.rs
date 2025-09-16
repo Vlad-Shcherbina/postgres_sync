@@ -65,6 +65,40 @@ impl std::fmt::Display for DbError {
 
 impl StdError for DbError {}
 
+impl DbError {
+    fn parse(mut fields: backend::ErrorFields<'_>) -> Self {
+    let mut severity = String::new();
+    let mut code = String::new();
+    let mut message = String::new();
+    let mut detail = None;
+    let mut hint = None;
+    let mut normal_position = None;
+    let mut internal_position = None;
+    let mut internal_query = None;
+    while let Some(field) = fields.next().unwrap() {
+        match field.type_() {
+            b'S' => severity = String::from_utf8_lossy(field.value_bytes()).into_owned(),
+            b'C' => code = String::from_utf8_lossy(field.value_bytes()).into_owned(),
+            b'M' => message = String::from_utf8_lossy(field.value_bytes()).into_owned(),
+            b'D' => detail = Some(String::from_utf8_lossy(field.value_bytes()).into_owned()),
+            b'H' => hint = Some(String::from_utf8_lossy(field.value_bytes()).into_owned()),
+            b'P' => normal_position = String::from_utf8_lossy(field.value_bytes()).parse().ok(),
+            b'p' => internal_position = String::from_utf8_lossy(field.value_bytes()).parse().ok(),
+            b'q' => internal_query = Some(String::from_utf8_lossy(field.value_bytes()).into_owned()),
+            _ => {}
+        }
+    }
+    let position = match normal_position {
+        Some(pos) => Some(ErrorPosition::Original(pos)),
+        None => internal_position.map(|pos| ErrorPosition::Internal {
+            position: pos,
+            query: internal_query.unwrap_or_default(),
+        }),
+    };
+    Self { severity, code, message, detail, hint, position }
+    }
+}
+
 #[derive(Debug)]
 pub enum ErrorPosition {
     Original(u32),
@@ -119,7 +153,7 @@ impl Client {
                 backend::Message::ReadyForQuery(_) => break,
                 backend::Message::BackendKeyData(_) => {}
                 backend::Message::ParameterStatus(_) => {}
-                backend::Message::ErrorResponse(body) => return Err(this.error_response(body.fields()).into()),
+                backend::Message::ErrorResponse(body) => return Err(DbError::parse(body.fields()).into()),
                 _ => return Err("unexpected message".into()),
             }
         }
@@ -166,7 +200,7 @@ impl Client {
 
                     let body = match self.read_message()? {
                         backend::Message::AuthenticationSaslContinue(body) => body,
-                        backend::Message::ErrorResponse(body) => return Err(self.error_response(body.fields()).into()),
+                        backend::Message::ErrorResponse(body) => return Err(DbError::parse(body.fields()).into()),
                         _ => return Err("unexpected message".into()),
                     };
 
@@ -177,14 +211,14 @@ impl Client {
 
                     let body = match self.read_message()? {
                         backend::Message::AuthenticationSaslFinal(body) => body,
-                        backend::Message::ErrorResponse(body) => return Err(self.error_response(body.fields()).into()),
+                        backend::Message::ErrorResponse(body) => return Err(DbError::parse(body.fields()).into()),
                         _ => return Err("unexpected message".into()),
                     };
 
                     scram.finish(body.data())?;
                 }
                 backend::Message::ErrorResponse(body) => {
-                    return Err(self.error_response(body.fields()).into());
+                    return Err(DbError::parse(body.fields()).into());
                 }
                 _ => return Err("unsupported authentication".into()),
             }
@@ -203,7 +237,7 @@ impl Client {
         loop {
             if let Some(message) = backend::Message::parse(&mut self.read_buf)? {
                 if let backend::Message::NoticeResponse(body) = &message {
-                    log::info!("postgres notice: {:?}", self.error_response(body.fields()));
+                    log::info!("postgres notice: {:?}", DbError::parse(body.fields()));
                     continue;
                 }
                 return Ok(message);
@@ -217,44 +251,12 @@ impl Client {
         }
     }
 
-    fn error_response(&self, mut fields: backend::ErrorFields<'_>) -> DbError {
-        let mut severity = String::new();
-        let mut code = String::new();
-        let mut message = String::new();
-        let mut detail = None;
-        let mut hint = None;
-        let mut normal_position = None;
-        let mut internal_position = None;
-        let mut internal_query = None;
-        while let Some(field) = fields.next().unwrap() {
-            match field.type_() {
-                b'S' => severity = String::from_utf8_lossy(field.value_bytes()).into_owned(),
-                b'C' => code = String::from_utf8_lossy(field.value_bytes()).into_owned(),
-                b'M' => message = String::from_utf8_lossy(field.value_bytes()).into_owned(),
-                b'D' => detail = Some(String::from_utf8_lossy(field.value_bytes()).into_owned()),
-                b'H' => hint = Some(String::from_utf8_lossy(field.value_bytes()).into_owned()),
-                b'P' => normal_position = String::from_utf8_lossy(field.value_bytes()).parse().ok(),
-                b'p' => internal_position = String::from_utf8_lossy(field.value_bytes()).parse().ok(),
-                b'q' => internal_query = Some(String::from_utf8_lossy(field.value_bytes()).into_owned()),
-                _ => {}
-            }
-        }
-        let position = match normal_position {
-            Some(pos) => Some(ErrorPosition::Original(pos)),
-            None => internal_position.map(|pos| ErrorPosition::Internal {
-                position: pos,
-                query: internal_query.unwrap_or_default(),
-            }),
-        };
-        DbError { severity, code, message, detail, hint, position }
-    }
-
     fn drain_ready(&mut self) -> Result<(), Error> {
         loop {
             match self.read_message()? {
                 backend::Message::ReadyForQuery(_) => return Ok(()),
                 backend::Message::ErrorResponse(body) => {
-                    return Err(self.error_response(body.fields()).into())
+                    return Err(DbError::parse(body.fields()).into())
                 }
                 _ => {}
             }
@@ -294,7 +296,7 @@ impl Client {
                 backend::Message::NoData => {}
                 backend::Message::ReadyForQuery(_) => break,
                 backend::Message::ErrorResponse(body) => {
-                    let err = self.error_response(body.fields());
+                    let err = DbError::parse(body.fields());
                     self.drain_ready()?;
                     return Err(err.into());
                 }
@@ -364,7 +366,7 @@ impl Client {
                 backend::Message::EmptyQueryResponse => rows_affected = 0,
                 backend::Message::ReadyForQuery(_) => return Ok(rows_affected),
                 backend::Message::ErrorResponse(body) => {
-                    let err = self.error_response(body.fields());
+                    let err = DbError::parse(body.fields());
                     self.drain_ready()?;
                     return Err(err.into());
                 }
@@ -425,7 +427,7 @@ impl Client {
                 | backend::Message::RowDescription(_)
                 | backend::Message::DataRow(_) => {}
                 backend::Message::ErrorResponse(body) => {
-                    let err = self.error_response(body.fields());
+                    let err = DbError::parse(body.fields());
                     self.drain_ready()?;
                     return Err(err.into());
                 }
