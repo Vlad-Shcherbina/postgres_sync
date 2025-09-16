@@ -119,7 +119,7 @@ impl Client {
                 backend::Message::ReadyForQuery(_) => break,
                 backend::Message::BackendKeyData(_) => {}
                 backend::Message::ParameterStatus(_) => {}
-                backend::Message::ErrorResponse(body) => return Err(this.error_response(body).into()),
+                backend::Message::ErrorResponse(body) => return Err(this.error_response(body.fields()).into()),
                 _ => return Err("unexpected message".into()),
             }
         }
@@ -166,7 +166,7 @@ impl Client {
 
                     let body = match self.read_message()? {
                         backend::Message::AuthenticationSaslContinue(body) => body,
-                        backend::Message::ErrorResponse(body) => return Err(self.error_response(body).into()),
+                        backend::Message::ErrorResponse(body) => return Err(self.error_response(body.fields()).into()),
                         _ => return Err("unexpected message".into()),
                     };
 
@@ -177,14 +177,14 @@ impl Client {
 
                     let body = match self.read_message()? {
                         backend::Message::AuthenticationSaslFinal(body) => body,
-                        backend::Message::ErrorResponse(body) => return Err(self.error_response(body).into()),
+                        backend::Message::ErrorResponse(body) => return Err(self.error_response(body.fields()).into()),
                         _ => return Err("unexpected message".into()),
                     };
 
                     scram.finish(body.data())?;
                 }
                 backend::Message::ErrorResponse(body) => {
-                    return Err(self.error_response(body).into());
+                    return Err(self.error_response(body.fields()).into());
                 }
                 _ => return Err("unsupported authentication".into()),
             }
@@ -213,7 +213,7 @@ impl Client {
         }
     }
 
-    fn error_response(&self, body: backend::ErrorResponseBody) -> DbError {
+    fn error_response(&self, mut fields: backend::ErrorFields<'_>) -> DbError {
         let mut severity = String::new();
         let mut code = String::new();
         let mut message = String::new();
@@ -222,7 +222,6 @@ impl Client {
         let mut normal_position = None;
         let mut internal_position = None;
         let mut internal_query = None;
-        let mut fields = body.fields();
         while let Some(field) = fields.next().unwrap() {
             match field.type_() {
                 b'S' => severity = String::from_utf8_lossy(field.value_bytes()).into_owned(),
@@ -251,7 +250,7 @@ impl Client {
             match self.read_message()? {
                 backend::Message::ReadyForQuery(_) => return Ok(()),
                 backend::Message::ErrorResponse(body) => {
-                    return Err(self.error_response(body).into())
+                    return Err(self.error_response(body.fields()).into())
                 }
                 _ => {}
             }
@@ -291,7 +290,7 @@ impl Client {
                 backend::Message::NoData => {}
                 backend::Message::ReadyForQuery(_) => break,
                 backend::Message::ErrorResponse(body) => {
-                    let err = self.error_response(body);
+                    let err = self.error_response(body.fields());
                     self.drain_ready()?;
                     return Err(err.into());
                 }
@@ -361,7 +360,7 @@ impl Client {
                 backend::Message::EmptyQueryResponse => rows_affected = 0,
                 backend::Message::ReadyForQuery(_) => return Ok(rows_affected),
                 backend::Message::ErrorResponse(body) => {
-                    let err = self.error_response(body);
+                    let err = self.error_response(body.fields());
                     self.drain_ready()?;
                     return Err(err.into());
                 }
@@ -422,7 +421,7 @@ impl Client {
                 | backend::Message::RowDescription(_)
                 | backend::Message::DataRow(_) => {}
                 backend::Message::ErrorResponse(body) => {
-                    let err = self.error_response(body);
+                    let err = self.error_response(body.fields());
                     self.drain_ready()?;
                     return Err(err.into());
                 }
