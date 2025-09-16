@@ -49,6 +49,15 @@ fn main() {
     assert!(e.contains("position: Some(Original(11))"), "{e}");
     eprintln!("ok");
 
+    eprint!("table already exists (notice) ... ");
+    client
+        .batch_execute("CREATE TEMP TABLE IF NOT EXISTS ifexists_test (id INT)")
+        .unwrap();
+    client
+        .batch_execute("CREATE TEMP TABLE IF NOT EXISTS ifexists_test (id INT)")
+        .unwrap();
+    eprintln!("ok");
+
     eprint!("batch_execute ... ");
     client.batch_execute("
         CREATE TEMP TABLE test (id INT PRIMARY KEY, value TEXT);

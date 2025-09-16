@@ -202,6 +202,11 @@ impl Client {
     fn read_message(&mut self) -> Result<backend::Message, Error> {
         loop {
             if let Some(message) = backend::Message::parse(&mut self.read_buf)? {
+                if let backend::Message::NoticeResponse(body) = &message {
+                    // TODO: use log
+                    eprintln!("postgres notice: {:?}", self.error_response(body.fields()));
+                    continue;
+                }
                 return Ok(message);
             }
             let mut buf = [0u8; 8192];
