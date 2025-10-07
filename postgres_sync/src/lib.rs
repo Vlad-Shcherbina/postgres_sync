@@ -481,11 +481,21 @@ impl Row {
         I: RowIndex,
         T: FromSql<'a>,
     {
-        let idx = idx.idx(&self.columns).expect("invalid column");
+        self.try_get(idx).unwrap()
+    }
+
+    pub fn try_get<'a, I, T>(&'a self, idx: I) -> Result<T, Error>
+    where
+        I: RowIndex,
+        T: FromSql<'a>,
+    {
+        let idx = idx
+            .idx(&self.columns)
+            .ok_or_else(|| -> Error { "invalid column".into() })?;
         let (_, oid) = &self.columns[idx];
         let ty = Type::from_oid(*oid).unwrap_or(Type::TEXT);
         let raw = self.values[idx].as_deref();
-        FromSql::from_sql_nullable(&ty, raw).unwrap()
+        FromSql::from_sql_nullable(&ty, raw)
     }
 }
 

@@ -129,6 +129,12 @@ fn main() {
     assert_eq!(two, 2);
     eprintln!("ok");
 
+    eprint!("row.try_get ... ");
+    let row = client.query_one("SELECT 42", &[]).unwrap();
+    let answer: i32 = row.try_get(0).unwrap();
+    assert_eq!(answer, 42);
+    eprintln!("ok");
+
     eprint!("execute ... ");
     let rows = client
         .execute("INSERT INTO test VALUES ($1, $2)", &[&3i32, &"three"])
