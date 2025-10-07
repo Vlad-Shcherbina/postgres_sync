@@ -22,7 +22,7 @@ use postgres_protocol::authentication::{
 };
 use postgres_protocol::message::backend;
 use postgres_protocol::message::frontend;
-use postgres_types::{IsNull, Type};
+use postgres_types::{IsNull, Type, WrongType};
 use socket2::{SockRef, TcpKeepalive};
 
 pub use fallible_iterator;
@@ -494,6 +494,9 @@ impl Row {
             .ok_or_else(|| -> Error { "invalid column".into() })?;
         let (_, oid) = &self.columns[idx];
         let ty = Type::from_oid(*oid).unwrap_or(Type::TEXT);
+        if !T::accepts(&ty) {
+            return Err(Box::new(WrongType::new::<T>(ty)));
+        }
         let raw = self.values[idx].as_deref();
         FromSql::from_sql_nullable(&ty, raw)
     }

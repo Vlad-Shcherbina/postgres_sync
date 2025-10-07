@@ -58,6 +58,12 @@ fn main() {
     assert!(e.contains("position: Some(Original(11))"), "{e}");
     eprintln!("ok");
 
+    eprint!("conversion error ... ");
+    let row = client.query_one("SELECT 0::INT4", &[]).unwrap();
+    let e = row.try_get::<_, i64>(0).unwrap_err().to_string();
+    assert!(e.contains("cannot convert between the Rust type `i64` and the Postgres type `int4`"), "{e}");
+    eprintln!("ok");
+
     eprint!("table already exists (notice) ... ");
     client
         .batch_execute("CREATE TEMP TABLE IF NOT EXISTS ifexists_test (id INT)")
