@@ -476,8 +476,9 @@ impl RowIndex for &str {
 
 
 impl Row {
-    pub fn get<'a, T>(&'a self, idx: impl RowIndex) -> T
+    pub fn get<'a, I, T>(&'a self, idx: I) -> T
     where
+        I: RowIndex,
         T: FromSql<'a>,
     {
         let idx = idx.idx(&self.columns).expect("invalid column");

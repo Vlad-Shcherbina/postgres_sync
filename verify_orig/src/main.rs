@@ -27,6 +27,12 @@ fn main() {
     assert_eq!(result, 4);
     eprintln!("ok");
 
+    eprint!("Row::get turbofish ... ");
+    let row = client.query_one("SELECT 0 as z", &[]).unwrap();
+    let v = row.get::<&str, i32>("z");
+    assert_eq!(v, 0);
+    eprintln!("ok");
+
     eprint!("parameters ... ");
     let row = client
         .query_one("SELECT $1::INT4 + $2::INT4", &[&2i32, &2i32])
