@@ -858,6 +858,7 @@ dependencies = [
  "log",
  "postgres",
  "serde_json",
+ "tokio-postgres",
 ]
 
 [[package]]
