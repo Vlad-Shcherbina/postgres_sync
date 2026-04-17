@@ -1,0 +1,10 @@
+[package]
+name = "necromancy"
+version = "0.0.0"
+edition = "2024"
+
+[dependencies]
+postgres = "0.15.2"  # the last truly sync version
+
+# Note: postgres 0.15 depends on yanked crates hmac 0.1.2, digest 0.5.2, crypto-mac 0.3, sha2 0.5.3.
+# This trick can be used to add yanked dependencies: https://github.com/rust-lang/cargo/issues/4225#issuecomment-2842940714
